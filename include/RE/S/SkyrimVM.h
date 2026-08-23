@@ -40,6 +40,10 @@ namespace RE
 	struct TESActivateEvent;
 	struct TESActiveEffectApplyRemoveEvent;
 	struct TESActorLocationChangeEvent;
+#ifdef ENABLE_SKYRIM_AE
+	struct TESAmiiboTouchEvent;
+	struct TESAmiiboForcedStopDetectionEvent;
+#endif
 	struct TESBookReadEvent;
 	struct TESCellAttachDetachEvent;
 	struct TESCellFullyLoadedEvent;
@@ -279,11 +283,82 @@ namespace RE
             RUNTIME_DATA2_CONTENT
 		};
 
-		RUNTIME_DATA_ACCESSOR(RUNTIME_DATA, 0x754, 0);
+		// AE 1.7.99 inserts two event sink bases at 0x180, shifting this block by +0x10.
+		[[nodiscard]] inline RUNTIME_DATA& GetRuntimeData() noexcept
+		{
+			assert(!REL::Module::IsVR());
+			if (REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99)) {
+				return REL::RelocateMember<RUNTIME_DATA>(this, 0x764);
+			}
+			return REL::RelocateMember<RUNTIME_DATA>(this, 0x754);
+		}
+
+		[[nodiscard]] inline const RUNTIME_DATA& GetRuntimeData() const noexcept
+		{
+			return const_cast<SkyrimVM*>(this)->GetRuntimeData();
+		}
 
 		VR_RUNTIME_DATA_ACCESSOR(VR_RUNTIME_DATA, GetVRRuntimeData, 0x754);
 
-		RUNTIME_DATA_ACCESSOR_EX(RUNTIME_DATA2, GetRuntimeData2, 0x760, 0x780);
+		[[nodiscard]] inline RUNTIME_DATA2& GetRuntimeData2() noexcept
+		{
+			if SKYRIM_REL_CONSTEXPR (REL::Module::IsVR()) {
+				return REL::RelocateMember<RUNTIME_DATA2>(this, 0x780);
+			}
+			if (REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99)) {
+				return REL::RelocateMember<RUNTIME_DATA2>(this, 0x770);
+			}
+			return REL::RelocateMember<RUNTIME_DATA2>(this, 0x760);
+		}
+
+		[[nodiscard]] inline const RUNTIME_DATA2& GetRuntimeData2() const noexcept
+		{
+			return const_cast<SkyrimVM*>(this)->GetRuntimeData2();
+		}
+
+#ifdef ENABLE_SKYRIM_AE
+		// The two bases AE 1.7.99 inserts at 0x180. Null below 1.7.99.
+		[[nodiscard]] BSTEventSink<TESAmiiboTouchEvent>* AsTESAmiiboTouchEventSink() noexcept
+		{
+			if (!REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99)) {
+				return nullptr;
+			}
+			return reinterpret_cast<BSTEventSink<TESAmiiboTouchEvent>*>(reinterpret_cast<std::uintptr_t>(this) + 0x180);
+		}
+
+		[[nodiscard]] BSTEventSink<TESAmiiboForcedStopDetectionEvent>* AsTESAmiiboForcedStopDetectionEventSink() noexcept
+		{
+			if (!REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99)) {
+				return nullptr;
+			}
+			return reinterpret_cast<BSTEventSink<TESAmiiboForcedStopDetectionEvent>*>(reinterpret_cast<std::uintptr_t>(this) + 0x188);
+		}
+#endif
+
+#if defined(EXCLUSIVE_SKYRIM_FLAT)
+		// The flat event sink bases from 0x180 on. Their compile-time base offsets are
+		// wrong on AE 1.7.99 (everything moved +0x10), so upcast through these instead
+		// of a static_cast.
+		[[nodiscard]] BSTEventSink<TESPlayerBowShotEvent>* AsTESPlayerBowShotEventSink() noexcept
+		{
+			return reinterpret_cast<BSTEventSink<TESPlayerBowShotEvent>*>(reinterpret_cast<std::uintptr_t>(this) + (REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99) ? 0x190 : 0x180));
+		}
+
+		[[nodiscard]] BSTEventSink<TESFastTravelEndEvent>* AsTESFastTravelEndEventSink() noexcept
+		{
+			return reinterpret_cast<BSTEventSink<TESFastTravelEndEvent>*>(reinterpret_cast<std::uintptr_t>(this) + (REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99) ? 0x198 : 0x188));
+		}
+
+		[[nodiscard]] BSTEventSink<PositionPlayerEvent>* AsPositionPlayerEventSink() noexcept
+		{
+			return reinterpret_cast<BSTEventSink<PositionPlayerEvent>*>(reinterpret_cast<std::uintptr_t>(this) + (REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99) ? 0x1A0 : 0x190));
+		}
+
+		[[nodiscard]] BSTEventSink<BSScript::StatsEvent>* AsStatsEventSink() noexcept
+		{
+			return reinterpret_cast<BSTEventSink<BSScript::StatsEvent>*>(reinterpret_cast<std::uintptr_t>(this) + (REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99) ? 0x1A8 : 0x198));
+		}
+#endif
 
 		// AE 1.7.99 inserts two event sink bases at 0x180, so every member from
 		// 0x180 onwards moves up by 0x10 and impl sits at 0x210. The member is
@@ -317,32 +392,61 @@ namespace RE
 		BSScript::SimpleAllocMemoryPagePolicy      memoryPagePolicy;           // 0218
 		BSScript::CompiledScriptLoader             scriptLoader;               // 0240
 		SkyrimScript::Logger                       logger;                     // 0278
-		SkyrimScript::HandlePolicy                 handlePolicy;               // 0328
-		SkyrimScript::ObjectBindPolicy             objectBindPolicy;           // 0398
-		BSTSmartPointer<SkyrimScript::Store>       scriptStore;                // 0470
-		SkyrimScript::FragmentSystem               fragmentSystem;             // 0478
-		SkyrimScript::Profiler                     profiler;                   // 0590
-		SkyrimScript::SavePatcher                  savePatcher;                // 0670
-		mutable BSSpinLock                         frozenLock;                 // 0678
-		std::uint32_t                              isFrozen;                   // 0680
-		mutable BSSpinLock                         currentVMTimeLock;          // 0684
-		std::uint32_t                              currentVMTime;              // 068C
-		std::uint32_t                              currentVMMenuModeTime;      // 0690
-		std::uint32_t                              currentVMGameTime;          // 0694
-		std::uint32_t                              currentVMDaysPassed;        // 0698 - Calender.GetDaysPassed() * 1000
-		mutable BSSpinLock                         queuedWaitEventLock;        // 069C
-		std::uint32_t                              pad06A4;                    // 06A4
-		BSTArray<WaitCall>                         queuedWaitCalls;            // 06A8 - Utility.Wait() calls
-		BSTArray<WaitCall>                         queuedWaitMenuModeCalls;    // 06C0 - Utility.WaitMenuMode() calls
-		BSTArray<WaitCall>                         queuedWaitGameCalls;        // 06D8 - Utility.WaitGameTime() calls
-		mutable BSSpinLock                         queuedLOSEventCheckLock;    // 06F0
-		BSTArray<BSTSmartPointer<LOSDataEvent>>    queuedLOSEventChecks;       // 06F8 - OnGainLOS/OnLostLOS
-		std::uint32_t                              currentLOSEventCheckIndex;  // 0710
-		mutable BSSpinLock                         queuedOnUpdateEventLock;    // 0714
-		std::uint32_t                              pad071C;                    // 071C
-		BSTArray<BSTSmartPointer<UpdateDataEvent>> queuedOnUpdateEvents;       // 0720
-		BSTArray<BSTSmartPointer<UpdateDataEvent>> queuedOnUpdateGameEvents;   // 0738
-		std::uint32_t                              unk0750;                    // 0750
+
+	private:
+		// AE 1.7.99 shifts this and every later member by +0x10. Read the shifted
+		// members through the accessors, never directly.
+		std::uint8_t _padHandlePolicy[sizeof(SkyrimScript::HandlePolicy)];  // 0328
+
+	public:
+		RUNTIME_MEMBER_ACCESSOR_VERSIONED(SkyrimScript::HandlePolicy, GetHandlePolicy, SKSE::RUNTIME_SSE_1_7_99, 0x328, 0x328, 0x338);
+
+		struct TAIL_RUNTIME_DATA
+		{
+			SkyrimScript::ObjectBindPolicy             objectBindPolicy;           // 0398
+			BSTSmartPointer<SkyrimScript::Store>       scriptStore;                // 0470
+			SkyrimScript::FragmentSystem               fragmentSystem;             // 0478
+			SkyrimScript::Profiler                     profiler;                   // 0590
+			SkyrimScript::SavePatcher                  savePatcher;                // 0670
+			mutable BSSpinLock                         frozenLock;                 // 0678
+			std::uint32_t                              isFrozen;                   // 0680
+			mutable BSSpinLock                         currentVMTimeLock;          // 0684
+			std::uint32_t                              currentVMTime;              // 068C
+			std::uint32_t                              currentVMMenuModeTime;      // 0690
+			std::uint32_t                              currentVMGameTime;          // 0694
+			std::uint32_t                              currentVMDaysPassed;        // 0698 - Calender.GetDaysPassed() * 1000
+			mutable BSSpinLock                         queuedWaitEventLock;        // 069C
+			std::uint32_t                              pad06A4;                    // 06A4
+			BSTArray<WaitCall>                         queuedWaitCalls;            // 06A8 - Utility.Wait() calls
+			BSTArray<WaitCall>                         queuedWaitMenuModeCalls;    // 06C0 - Utility.WaitMenuMode() calls
+			BSTArray<WaitCall>                         queuedWaitGameCalls;        // 06D8 - Utility.WaitGameTime() calls
+			mutable BSSpinLock                         queuedLOSEventCheckLock;    // 06F0
+			BSTArray<BSTSmartPointer<LOSDataEvent>>    queuedLOSEventChecks;       // 06F8 - OnGainLOS/OnLostLOS
+			std::uint32_t                              currentLOSEventCheckIndex;  // 0710
+			mutable BSSpinLock                         queuedOnUpdateEventLock;    // 0714
+			std::uint32_t                              pad071C;                    // 071C
+			BSTArray<BSTSmartPointer<UpdateDataEvent>> queuedOnUpdateEvents;       // 0720
+			BSTArray<BSTSmartPointer<UpdateDataEvent>> queuedOnUpdateGameEvents;   // 0738
+			std::uint32_t                              unk0750;                    // 0750
+		};
+
+		[[nodiscard]] inline TAIL_RUNTIME_DATA& GetTailRuntimeData() noexcept
+		{
+			if (REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99)) {
+				return REL::RelocateMember<TAIL_RUNTIME_DATA>(this, 0x3A8);
+			}
+			return REL::RelocateMember<TAIL_RUNTIME_DATA>(this, 0x398);
+		}
+
+		[[nodiscard]] inline const TAIL_RUNTIME_DATA& GetTailRuntimeData() const noexcept
+		{
+			return const_cast<SkyrimVM*>(this)->GetTailRuntimeData();
+		}
+
+	private:
+		std::uint8_t _padTailRuntimeData[0x3BC];  // 0398
+
+	public:
 #if defined(EXCLUSIVE_SKYRIM_FLAT)
 		RUNTIME_DATA_CONTENT;
 #elif defined(EXCLUSIVE_SKYRIM_VR)
@@ -353,11 +457,7 @@ namespace RE
 #endif
 	};
 #if defined(EXCLUSIVE_SKYRIM_FLAT)
-#	ifdef ENABLE_SKYRIM_AE
 	static_assert(sizeof(SkyrimVM) == 0x760);
-#	else
-	static_assert(sizeof(SkyrimVM) == 0x760);
-#	endif
 #elif defined(EXCLUSIVE_SKYRIM_VR)
 	static_assert(sizeof(SkyrimVM) == 0x780);
 #else
