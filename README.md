@@ -9,6 +9,28 @@
 CommonLibSSE NG is a fork of CharmedBaryon's CommonLibSSE-NG, itself a fork of CommonLibSSE, which tracks upstream updates but adds a number of enhancements.
 It supports Skyrim Special Edition (SE), Skyrim Anniversary Edition (AE), and Skyrim Virtual Reality (VR).
 
+## About this fork
+
+This fork continues the MIT licensed line of CommonLibSSE NG. Upstream relicensed to
+GPL-3.0-or-later on 2026-07-25 (commit `12f851865`). This fork branches from the last MIT
+commit (`6d31e3244`, v4.39.3) and stays under the MIT license.
+
+On top of that base, the fork adds support for Skyrim SE 1.7.99:
+
+- Runtime classification treats minor version 6 and above as AE, so 1.7.x resolves the
+  AE address library file name.
+- The address library loader reads format 5, the dense array format that ships for 1.7.99.
+- `RE::SkyrimVM::GetImpl()` reads `impl` at its 1.7.99 offset (0x210), so the Papyrus
+  layer works. Read `impl` through the accessor, never directly.
+
+The 1.7.99 support was implemented independently from the game binaries and the address
+library file. No code from the GPL licensed upstream commits was copied.
+
+Known gap against upstream 6.5.0: the broad 1.7.99 struct layout modeling (input handlers,
+`BSInputEventQueue`, the `PlayerCharacter` family shift, and others) is not ported. Members
+of `SkyrimVM` past 0x180, other than `impl`, are still declared at their pre-1.7.99 offsets.
+Audit any such member before you dereference it on 1.7.99.
+
 ## Usage
 
 To develop a C++ project that uses CommonLibSSE, you'll want to have this code available for discovery, and included as a build dependency by your build manager. Below are examples using the `xmake` or `cmake` managers.
