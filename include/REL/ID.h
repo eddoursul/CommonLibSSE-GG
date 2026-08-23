@@ -65,6 +65,7 @@ namespace REL
 		{
 			SSEv1,
 			SSEv2,
+			SSEv5,
 			VR
 		};
 
@@ -153,6 +154,8 @@ namespace REL
 				return _instance.load_file(a_filePath.data(), a_version, 1, false);
 			case Format::SSEv2:
 				return _instance.load_file(a_filePath.data(), a_version, 2, false);
+			case Format::SSEv5:
+				return _instance.load_file(a_filePath.data(), a_version, 5, false);
 #	ifdef ENABLE_SKYRIM_VR
 			case Format::VR:
 				return _instance.load_csv(a_filePath.data(), a_version, false);
@@ -171,6 +174,14 @@ namespace REL
 
 		[[nodiscard]] inline std::size_t id2offset(std::uint64_t a_id) const
 		{
+			if (!_id2rva.empty()) {
+				// Format 5 (AE 1.7.99+): a dense array indexed by ID, 0 marks an unused ID.
+				if (a_id >= _id2rva.size() || _id2rva[a_id] == 0) {
+					report_missing_id(a_id);
+				}
+				return static_cast<std::size_t>(_id2rva[a_id]);
+			}
+
 			mapping_t  elem{ a_id, 0 };
 			const auto it = std::lower_bound(
 				_id2offset.begin(),
@@ -189,12 +200,7 @@ namespace REL
 				}
 			}
 			if (failed) {
-				stl::report_and_fail(
-					std::format(
-						"Failed to find the id within the address library: {}\n"
-						"This means this script extender plugin is incompatible with the address "
-						"library for this version of the game, and thus does not support it."sv,
-						a_id));
+				report_missing_id(a_id);
 			}
 
 			return static_cast<std::size_t>(it->offset);
@@ -246,6 +252,11 @@ namespace REL
 				return val;
 			}
 
+			inline void readin_bytes(void* a_dst, std::streamsize a_count)
+			{
+				_stream.read(static_cast<char*>(a_dst), a_count);
+			}
+
 		private:
 			stream_type _stream;
 		};
@@ -253,20 +264,9 @@ namespace REL
 		class header_t
 		{
 		public:
-			void read(istream_t& a_in, std::uint8_t a_formatVersion)
+			// The caller reads and validates the format field before this runs.
+			void read(istream_t& a_in)
 			{
-				std::int32_t format{};
-				a_in.readin(format);
-				if (format != a_formatVersion) {
-					stl::report_and_fail(
-						std::format(
-							"Unsupported address library format: {}\n"
-							"This means this script extender plugin is incompatible with the address "
-							"library available for this version of the game, and thus does not "
-							"support it."sv,
-							format));
-				}
-
 				std::int32_t version[4]{};
 				std::int32_t nameLen{};
 				a_in.readin(version);
@@ -328,9 +328,21 @@ namespace REL
 
 		bool load_file(stl::zwstring a_filename, Version a_version, std::uint8_t a_formatVersion, bool a_failOnError);
 
+		bool load_dense(istream_t& a_in, stl::zwstring a_filename, Version a_version, bool a_failOnError);
+
 #ifdef ENABLE_SKYRIM_VR
 		bool load_csv(stl::zwstring a_filename, Version a_version, bool a_failOnError);
 #endif
+
+		[[noreturn]] static void report_missing_id(std::uint64_t a_id)
+		{
+			stl::report_and_fail(
+				std::format(
+					"Failed to find the id within the address library: {}\n"
+					"This means this script extender plugin is incompatible with the address "
+					"library for this version of the game, and thus does not support it."sv,
+					a_id));
+		}
 
 		bool unpack_file(istream_t& a_in, header_t a_header, bool a_failOnError)
 		{
@@ -421,6 +433,8 @@ namespace REL
 		{
 			_mmap.close();
 			_id2offset = {};
+			_id2rva.clear();
+			_id2rva.shrink_to_fit();
 		}
 
 		static IDDatabase              _instance;
@@ -428,6 +442,7 @@ namespace REL
 		static inline std::mutex       _initLock;
 		detail::memory_map             _mmap;
 		std::span<mapping_t>           _id2offset;
+		std::vector<std::uint32_t>     _id2rva;
 
 #ifdef ENABLE_SKYRIM_VR
 		Version _vrAddressLibraryVersion;

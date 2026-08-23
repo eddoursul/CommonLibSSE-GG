@@ -96,9 +96,27 @@ namespace REL
 	bool IDDatabase::load_file(stl::zwstring a_filename, Version a_version, std::uint8_t a_formatVersion, bool a_failOnError)
 	{
 		try {
-			istream_t in(a_filename.data(), std::ios::in | std::ios::binary);
-			header_t  header;
-			header.read(in, a_formatVersion);
+			istream_t  in(a_filename.data(), std::ios::in | std::ios::binary);
+			const auto format = in.readout<std::int32_t>();
+
+			// AE 1.7.99 introduced format 5, so an AE runtime accepts either the
+			// delta coded format 2 or the dense format 5. SE stays on format 1.
+			if (format == 5 && a_formatVersion >= 2) {
+				return load_dense(in, a_filename, a_version, a_failOnError);
+			}
+			if (format != a_formatVersion) {
+				return stl::report_and_error(
+					std::format(
+						"Unsupported address library format: {}\n"
+						"This means this script extender plugin is incompatible with the address "
+						"library available for this version of the game, and thus does not "
+						"support it."sv,
+						format),
+					a_failOnError);
+			}
+
+			header_t header;
+			header.read(in);
 			if (header.version() != a_version) {
 				return stl::report_and_error("version mismatch"sv, a_failOnError);
 			}
@@ -129,6 +147,54 @@ namespace REL
 				a_failOnError);
 			return false;
 		}
+
+		return true;
+	}
+
+	// Format 5, used by the AE 1.7.99 address library. After the format field:
+	//
+	//   0x04  u32 version[4]
+	//   0x14  char name[64], fixed size
+	//   0x54  u32 pointer size
+	//   0x58  u32 reserved
+	//   0x5C  u32 count
+	//   0x60  u32 rva[count], one RVA per ID, 0 marks an unused ID
+	//
+	// The array is indexed directly by ID, so the file is read into a private
+	// buffer as is and no shared mapping is involved.
+	bool IDDatabase::load_dense(istream_t& a_in, stl::zwstring a_filename, Version a_version, bool a_failOnError)
+	{
+		std::uint32_t rawVersion[4]{};
+		a_in.readin(rawVersion);
+
+		Version version;
+		for (std::size_t i = 0; i < std::extent_v<decltype(rawVersion)>; ++i) {
+			version[i] = static_cast<std::uint16_t>(rawVersion[i]);
+		}
+		if (version != a_version) {
+			return stl::report_and_error("version mismatch"sv, a_failOnError);
+		}
+
+		a_in.ignore(64);
+
+		const auto pointerSize = a_in.readout<std::uint32_t>();
+		std::ignore = a_in.readout<std::uint32_t>();
+		const auto count = a_in.readout<std::uint32_t>();
+
+		constexpr std::uint64_t headerSize = 0x60;
+		std::error_code         ec;
+		const auto              fileSize = std::filesystem::file_size(a_filename.data(), ec);
+		if (ec || pointerSize != 8 ||
+			fileSize != headerSize + static_cast<std::uint64_t>(count) * sizeof(std::uint32_t)) {
+			return stl::report_and_error(
+				std::format(
+					"Malformed address library file: {}"sv,
+					stl::utf16_to_utf8(a_filename).value_or("<unknown filename>"s)),
+				a_failOnError);
+		}
+
+		_id2rva.resize(count);
+		a_in.readin_bytes(_id2rva.data(), static_cast<std::streamsize>(count * sizeof(std::uint32_t)));
 
 		return true;
 	}
