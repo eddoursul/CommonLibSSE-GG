@@ -284,6 +284,22 @@ namespace RE
 		VR_RUNTIME_DATA_ACCESSOR(VR_RUNTIME_DATA, GetVRRuntimeData, 0x754);
 
 		RUNTIME_DATA_ACCESSOR_EX(RUNTIME_DATA2, GetRuntimeData2, 0x760, 0x780);
+
+		// AE 1.7.99 inserts two event sink bases at 0x180, so every member from
+		// 0x180 onwards moves up by 0x10 and impl sits at 0x210. The member is
+		// declared at its pre-1.7.99 offset. Read it through here, never directly.
+		[[nodiscard]] inline BSTSmartPointer<BSScript::IVirtualMachine>& GetImpl() noexcept
+		{
+			// Only AE reaches 1.7.99, so the version test alone selects the runtime.
+			return REL::RelocateMemberIfNewer<BSTSmartPointer<BSScript::IVirtualMachine>>(
+				SKSE::RUNTIME_SSE_1_7_99, this, 0x200, 0x210);
+		}
+
+		[[nodiscard]] inline const BSTSmartPointer<BSScript::IVirtualMachine>& GetImpl() const noexcept
+		{
+			return const_cast<SkyrimVM*>(this)->GetImpl();
+		}
+
 		static SkyrimVM* GetSingleton();
 
 		bool QueuePostRenderCall(const BSTSmartPointer<SkyrimScript::DelayFunctor>& a_functor);
