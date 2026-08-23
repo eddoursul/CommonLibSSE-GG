@@ -15,21 +15,12 @@ This fork continues the MIT licensed line of CommonLibSSE NG. Upstream relicense
 GPL-3.0-or-later on 2026-07-25 (commit `12f851865`). This fork branches from the last MIT
 commit (`6d31e3244`, v4.39.3) and stays under the MIT license.
 
-On top of that base, the fork adds support for Skyrim SE 1.7.99:
-
-- Runtime classification treats minor version 6 and above as AE, so 1.7.x resolves the
-  AE address library file name.
-- The address library loader reads format 5, the dense array format that ships for 1.7.99.
-- `RE::SkyrimVM::GetImpl()` reads `impl` at its 1.7.99 offset (0x210), so the Papyrus
-  layer works. Read `impl` through the accessor, never directly.
-
-The 1.7.99 support was implemented independently from the game binaries and the address
-library file. No code from the GPL licensed upstream commits was copied.
-
-Known gap against upstream 6.5.0: the broad 1.7.99 struct layout modeling (input handlers,
-`BSInputEventQueue`, the `PlayerCharacter` family shift, and others) is not ported. Members
-of `SkyrimVM` past 0x180, other than `impl`, are still declared at their pre-1.7.99 offsets.
-Audit any such member before you dereference it on 1.7.99.
+On top of that base, the fork adds support for Skyrim SE 1.7.99: runtime classification,
+address library format 5, and the 1.7.99 layout changes (`SkyrimVM`, `PlayerCharacter`,
+the input handler vtables, `BSInputEventQueue`, the system utilities, and the new input
+event classes). Shifted members are reached through version aware accessors -- read them
+through the accessors, never directly. Every layout claim was verified against the
+1.6.1170 and 1.7.99 binaries. No code from the GPL licensed upstream commits was copied.
 
 ## Usage
 
