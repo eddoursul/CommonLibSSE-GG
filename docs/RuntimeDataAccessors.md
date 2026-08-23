@@ -34,6 +34,13 @@ RUNTIME_DATA_ACCESSOR_VERSIONED(PLAYER_RUNTIME_DATA, SKSE::RUNTIME_SSE_1_6_629, 
 // Uses OldOffset for SE < 1.6.629, NewOffset for SE >= 1.6.629 and AE
 ```
 
+#### `RUNTIME_DATA_ACCESSOR_VERSIONED_OPTIONAL_EX(StructType, FuncName, Version, Offset)`
+For a field or block that only exists from Version on. Returns a pointer, null on older runtimes.
+```cpp
+RUNTIME_DATA_ACCESSOR_VERSIONED_OPTIONAL_EX(AE1799_RUNTIME_DATA, GetAe1799RuntimeData, SKSE::RUNTIME_SSE_1_7_99, 0x110);
+// Generates: AE1799_RUNTIME_DATA* GetAe1799RuntimeData() -- nullptr below 1.7.99
+```
+
 ### Pointer Member Accessors
 
 #### `RUNTIME_DATA_POINTER_ACCESSOR_EX(PointerType, FuncName, SEOffset, VROffset)`
