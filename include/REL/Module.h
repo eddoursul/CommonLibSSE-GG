@@ -344,12 +344,13 @@ namespace REL
 				}
 				return true;
 			}
-			return stl::report_and_error(
+			stl::report_and_error(
 				std::format(
 					"Failed to obtain file version info for: {}\n"
 					"Please contact the author of this script extender plugin for further assistance."sv,
 					stl::utf16_to_utf8(_filename).value_or("<unicode conversion error>"s)),
 				a_failOnError);
+			return false;
 		}
 
 		void clear();
