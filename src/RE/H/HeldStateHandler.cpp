@@ -2,6 +2,8 @@
 
 #include "RE/B/ButtonEvent.h"
 
+// Other builds define these as non-virtual RelocateVirtual wrappers in the header.
+#ifdef EXCLUSIVE_SKYRIM_VR
 namespace RE
 {
 	void HeldStateHandler::UpdateHeldStateActive(const ButtonEvent* a_event)
@@ -14,3 +16,4 @@ namespace RE
 		heldStateActive = a_flag;
 	}
 }
+#endif

@@ -12,9 +12,28 @@ namespace RE
 
 		~HeldStateHandler() override = default;  // 00
 
+#if defined(EXCLUSIVE_SKYRIM_VR)
 		// add
 		virtual void UpdateHeldStateActive(const ButtonEvent* a_event);  // 05
 		virtual void SetHeldStateActive(bool a_flag);                    // 06
+#else
+		// AE 1.7.99 shifts these slots from 05/06 to 07/08 (two slots inserted in the
+		// PlayerInputHandler base), so non-VR-exclusive builds dispatch at runtime.
+#	ifdef ENABLE_SKYRIM_AE
+#		define AE1799_SLOT_SHIFT(idx) (REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99) ? (idx) + 2 : (idx))
+#	else
+#		define AE1799_SLOT_SHIFT(idx) (idx)
+#	endif
+		void UpdateHeldStateActive(const ButtonEvent* a_event)
+		{
+			REL::RelocateVirtual<void(HeldStateHandler*, const ButtonEvent*)>(AE1799_SLOT_SHIFT(0x05), 0x05, this, a_event);
+		}
+		void SetHeldStateActive(bool a_flag)
+		{
+			REL::RelocateVirtual<void(HeldStateHandler*, bool)>(AE1799_SLOT_SHIFT(0x06), 0x06, this, a_flag);
+		}
+#	undef AE1799_SLOT_SHIFT
+#endif
 
 		// members
 		bool          heldStateActive{ false };      // 10

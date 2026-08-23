@@ -1,8 +1,9 @@
 #include "RE/M/MenuEventHandler.h"
 
-// In SKYRIM_CROSS_VR these are non-virtual RelocateVirtual wrappers defined inline in the
-// header (the VR vtable shifts these slots), so they must not be redefined here.
-#ifndef SKYRIM_CROSS_VR
+// Every non-VR-exclusive build defines these as non-virtual RelocateVirtual wrappers
+// inline in the header (the VR vtable and AE 1.7.99 shift these slots), so they must
+// not be redefined here.
+#ifdef EXCLUSIVE_SKYRIM_VR
 namespace RE
 {
 	bool MenuEventHandler::ProcessKinect(KinectEvent*)
