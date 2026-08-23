@@ -7,6 +7,7 @@
 #include "RE/I/IMenu.h"
 #include "RE/N/NiMatrix3.h"
 #include "RE/N/NiPoint3.h"
+#include "RE/N/NiRect.h"
 #include "RE/N/NiSmartPointer.h"
 #include "RE/S/SimpleAnimationGraphManagerHolder.h"
 #include "RE/T/TESObjectREFR.h"
@@ -59,6 +60,17 @@ namespace RE
             RUNTIME_DATA_CONTENT
 		};
 		static_assert(sizeof(RUNTIME_DATA) == 0x48);
+
+#ifdef ENABLE_SKYRIM_AE
+		// AE 1.7.99 appends this block; the object grows by 0x10.
+		struct AE1799_RUNTIME_DATA
+		{
+			NiRect<float> unk98;  // 98
+		};
+		static_assert(sizeof(AE1799_RUNTIME_DATA) == 0x10);
+
+		RUNTIME_DATA_ACCESSOR_VERSIONED_OPTIONAL_EX(AE1799_RUNTIME_DATA, GetAe1799RuntimeData, SKSE::RUNTIME_SSE_1_7_99, 0x98);
+#endif
 
 		~BookMenu() override;  // 00
 

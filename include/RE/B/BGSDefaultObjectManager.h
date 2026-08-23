@@ -1027,15 +1027,18 @@ namespace RE
 			return func();
 		}
 
+		// Routed through the DefaultObjectID path so the AE 1.7.99 index remap applies.
 		[[nodiscard]] TESForm* GetObject(DefaultObject a_object) const noexcept
 		{
-			return GetObject(std::to_underlying(a_object));
+			auto obj = const_cast<BGSDefaultObjectManager*>(this)->GetObject(static_cast<DefaultObjectID>(std::to_underlying(a_object)));
+			return obj ? *obj : nullptr;
 		}
 
 		template <class T>
 		[[nodiscard]] T* GetObject(DefaultObject a_object) const noexcept
 		{
-			return GetObject<T>(std::to_underlying(a_object));
+			auto obj = const_cast<BGSDefaultObjectManager*>(this)->GetObject<T>(static_cast<DefaultObjectID>(std::to_underlying(a_object)));
+			return obj ? *obj : nullptr;
 		}
 
 		[[nodiscard]] TESForm* GetObject(std::size_t a_idx) const noexcept
@@ -1060,17 +1063,30 @@ namespace RE
 			return obj && *obj && (*obj)->As<T>() ? reinterpret_cast<T**>(obj) : nullptr;
 		}
 
+		// Objects that exist only from AE 1.7.99 on, by their raw index in the 1.7.99 array.
+		enum class Ae1799Object : std::size_t
+		{
+			kHelpManualNX = 188,
+			kHelpMotionAttackBlock = 264,
+			kHelpMotionBowAiming = 265,
+			kHelpMotionMagicAiming = 266,
+			kHelpMotionLockpicking = 267,
+			kHelpAmiibo = 268,
+		};
+
+		[[nodiscard]] TESForm** GetAe1799Object(Ae1799Object a_object) noexcept;
+
 		[[nodiscard]] bool IsObjectInitialized(DEFAULT_OBJECT a_object) const noexcept
 		{
-			return IsObjectInitialized(std::to_underlying(a_object));
+			return IsObjectInitialized(static_cast<DefaultObjectID>(std::to_underlying(a_object)));
 		}
 
 		[[nodiscard]] bool IsObjectInitialized(DefaultObjectID a_object) const noexcept;
 
-		[[nodiscard]] bool IsObjectInitialized(std::size_t a_idx) const noexcept
-		{
-			return (&REL::RelocateMember<bool>(this, 0xB80, 0xBA8))[a_idx];
-		}
+		[[nodiscard]] bool IsObjectInitialized(std::size_t a_idx) const noexcept;
+
+		// The number of default objects the running runtime holds.
+		[[nodiscard]] static std::size_t ObjectCount() noexcept;
 
 		[[nodiscard]] static bool SupportsVR(DefaultObjectID a_object) noexcept;
 
