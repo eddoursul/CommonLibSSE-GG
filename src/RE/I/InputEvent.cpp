@@ -6,6 +6,14 @@
 #include "RE/M/MouseMoveEvent.h"
 #include "RE/T/ThumbstickEvent.h"
 
+#ifdef ENABLE_SKYRIM_AE
+#	include "RE/A/AmiiboEvent.h"
+#	include "RE/M/MotionGestureEvent.h"
+#	include "RE/S/SixaxisEvent.h"
+#	include "REL/Module.h"
+#	include "SKSE/Version.h"
+#endif
+
 namespace RE
 {
 	ButtonEvent* InputEvent::AsButtonEvent()
@@ -47,6 +55,40 @@ namespace RE
 	{
 		return GetEventType() == INPUT_EVENT_TYPE::kMouseMove ? static_cast<const MouseMoveEvent*>(this) : nullptr;
 	}
+
+#ifdef ENABLE_SKYRIM_AE
+	// The kSixaxis/kMotionGesture/kAmiibo values collide with the VR touchpad pair,
+	// so the runtime version must agree before the cast is trusted.
+	AmiiboEvent* InputEvent::AsAmiiboEvent()
+	{
+		return REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99) && GetEventType() == INPUT_EVENT_TYPE::kAmiibo ? static_cast<AmiiboEvent*>(this) : nullptr;
+	}
+
+	const AmiiboEvent* InputEvent::AsAmiiboEvent() const
+	{
+		return const_cast<InputEvent*>(this)->AsAmiiboEvent();
+	}
+
+	MotionGestureEvent* InputEvent::AsMotionGestureEvent()
+	{
+		return REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99) && GetEventType() == INPUT_EVENT_TYPE::kMotionGesture ? static_cast<MotionGestureEvent*>(this) : nullptr;
+	}
+
+	const MotionGestureEvent* InputEvent::AsMotionGestureEvent() const
+	{
+		return const_cast<InputEvent*>(this)->AsMotionGestureEvent();
+	}
+
+	SixaxisEvent* InputEvent::AsSixaxisEvent()
+	{
+		return REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99) && GetEventType() == INPUT_EVENT_TYPE::kSixaxis ? static_cast<SixaxisEvent*>(this) : nullptr;
+	}
+
+	const SixaxisEvent* InputEvent::AsSixaxisEvent() const
+	{
+		return const_cast<InputEvent*>(this)->AsSixaxisEvent();
+	}
+#endif
 
 	ThumbstickEvent* InputEvent::AsThumbstickEvent()
 	{

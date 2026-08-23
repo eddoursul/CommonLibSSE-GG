@@ -36,6 +36,7 @@ set(SOURCES
 	include/RE/A/AddCallbackVisitor.h
 	include/RE/A/AlchemyItem.h
 	include/RE/A/AlchemyMenu.h
+	include/RE/A/AmiiboEvent.h
 	include/RE/A/AnimationClipDataSingleton.h
 	include/RE/A/AnimationFileManagerSingleton.h
 	include/RE/A/AnimationObjects.h
@@ -413,6 +414,7 @@ set(SOURCES
 	include/RE/B/BSStripParticleSystem.h
 	include/RE/B/BSSubIndexTriShape.h
 	include/RE/B/BSSynchronizedClipGenerator.h
+	include/RE/B/BSSystemEvent.h
 	include/RE/B/BSSystemFile.h
 	include/RE/B/BSSystemFileStorage.h
 	include/RE/B/BSSystemUtility.h
@@ -530,6 +532,7 @@ set(SOURCES
 	include/RE/B/bhkThreadMemorySource.h
 	include/RE/B/bhkUnaryAction.h
 	include/RE/B/bhkWorld.h
+	include/RE/B/bhkWorldCinfo.h
 	include/RE/B/bhkWorldObject.h
 	include/RE/C/CCallback.h
 	include/RE/C/CFilter.h
@@ -1468,6 +1471,7 @@ set(SOURCES
 	include/RE/M/ModelReferenceEffect.h
 	include/RE/M/Moon.h
 	include/RE/M/MotionDataContainer.h
+	include/RE/M/MotionGestureEvent.h
 	include/RE/M/MouseMoveEvent.h
 	include/RE/M/MoveToFunctor.h
 	include/RE/M/Movement.h
@@ -1699,6 +1703,7 @@ set(SOURCES
 	include/RE/S/ShoutMeter.h
 	include/RE/S/SimpleAllocMemoryPagePolicy.h
 	include/RE/S/SimpleAnimationGraphManagerHolder.h
+	include/RE/S/SixaxisEvent.h
 	include/RE/S/SkillIncrease.h
 	include/RE/S/Sky.h
 	include/RE/S/SkyEffectController.h
