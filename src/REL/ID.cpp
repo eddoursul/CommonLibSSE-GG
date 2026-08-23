@@ -105,7 +105,7 @@ namespace REL
 				return load_dense(in, a_filename, a_version, a_failOnError);
 			}
 			if (format != a_formatVersion) {
-				return stl::report_and_error(
+				stl::report_and_error(
 					std::format(
 						"Unsupported address library format: {}\n"
 						"This means this script extender plugin is incompatible with the address "
@@ -113,12 +113,14 @@ namespace REL
 						"support it."sv,
 						format),
 					a_failOnError);
+				return false;
 			}
 
 			header_t header;
 			header.read(in);
 			if (header.version() != a_version) {
-				return stl::report_and_error("version mismatch"sv, a_failOnError);
+				stl::report_and_error("version mismatch"sv, a_failOnError);
+				return false;
 			}
 
 			auto mapname = L"CommonLibSSEOffsets-v2-"s;
@@ -128,15 +130,19 @@ namespace REL
 				_id2offset = { static_cast<mapping_t*>(_mmap.data()), header.address_count() };
 			} else if (_mmap.create(mapname, byteSize)) {
 				_id2offset = { static_cast<mapping_t*>(_mmap.data()), header.address_count() };
-				unpack_file(in, header, a_failOnError);
+				if (!unpack_file(in, header, a_failOnError)) {
+					clear();
+					return false;
+				}
 				std::sort(_id2offset.begin(), _id2offset.end(), [](auto&& a_lhs, auto&& a_rhs) {
 					return a_lhs.id < a_rhs.id;
 				});
 			} else {
-				return stl::report_and_error("failed to create shared mapping"sv, a_failOnError);
+				stl::report_and_error("failed to create shared mapping"sv, a_failOnError);
+				return false;
 			}
 		} catch (const std::system_error&) {
-			return stl::report_and_error(
+			stl::report_and_error(
 				std::format(
 					"Failed to locate an appropriate address library with the path: {}\n"
 					"This means you are missing the address library for this specific version of "
@@ -172,7 +178,8 @@ namespace REL
 			version[i] = static_cast<std::uint16_t>(rawVersion[i]);
 		}
 		if (version != a_version) {
-			return stl::report_and_error("version mismatch"sv, a_failOnError);
+			stl::report_and_error("version mismatch"sv, a_failOnError);
+			return false;
 		}
 
 		a_in.ignore(64);
@@ -186,11 +193,12 @@ namespace REL
 		const auto              fileSize = std::filesystem::file_size(a_filename.data(), ec);
 		if (ec || pointerSize != 8 ||
 			fileSize != headerSize + static_cast<std::uint64_t>(count) * sizeof(std::uint32_t)) {
-			return stl::report_and_error(
+			stl::report_and_error(
 				std::format(
 					"Malformed address library file: {}"sv,
 					stl::utf16_to_utf8(a_filename).value_or("<unknown filename>"s)),
 				a_failOnError);
+			return false;
 		}
 
 		_id2rva.resize(count);
@@ -204,9 +212,10 @@ namespace REL
 	{
 		auto nstring = SKSE::stl::utf16_to_utf8(a_filename).value_or(""s);
 		if (!std::filesystem::exists(nstring)) {
-			return stl::report_and_error(
+			stl::report_and_error(
 				std::format("Required VR Address Library file {} does not exist"sv, nstring),
 				a_failOnError);
+			return false;
 		}
 
 		rapidcsv::Document in(nstring);
@@ -220,20 +229,23 @@ namespace REL
 		const auto byteSize = static_cast<std::size_t>(address_count * sizeof(mapping_t));
 		if (!_mmap.open(mapname, byteSize) &&
 			!_mmap.create(mapname, byteSize)) {
-			return stl::report_and_error("failed to create shared mapping"sv, a_failOnError);
+			stl::report_and_error("failed to create shared mapping"sv, a_failOnError);
+			return false;
 		}
 
 		_id2offset = { static_cast<mapping_t*>(_mmap.data()), static_cast<std::size_t>(address_count) };
 		if (in.GetRowCount() > address_count + 1) {
-			return stl::report_and_error(
+			stl::report_and_error(
 				std::format("VR Address Library {} tried to exceed {} allocated entries."sv,
 					version, address_count),
 				a_failOnError);
+			return false;
 		} else if (in.GetRowCount() < address_count + 1) {
-			return stl::report_and_error(
+			stl::report_and_error(
 				std::format("VR Address Library {} loaded only {} entries but expected {}. Please redownload."sv,
 					version, in.GetRowCount() - 1, address_count),
 				a_failOnError);
+			return false;
 		}
 
 		std::size_t index = 1;

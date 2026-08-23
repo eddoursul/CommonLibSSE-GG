@@ -382,7 +382,8 @@ namespace REL
 					id = a_in.readout<std::uint32_t>();
 					break;
 				default:
-					return stl::report_and_error("unhandled type"sv, a_failOnError);
+					stl::report_and_error("unhandled type"sv, a_failOnError);
+					return false;
 				}
 
 				const std::uint64_t tmp = (hi & 8) != 0 ? (prevOffset / a_header.pointer_size()) : prevOffset;
@@ -413,7 +414,8 @@ namespace REL
 					offset = a_in.readout<std::uint32_t>();
 					break;
 				default:
-					return stl::report_and_error("unhandled type"sv, a_failOnError);
+					stl::report_and_error("unhandled type"sv, a_failOnError);
+					return false;
 				}
 
 				if ((hi & 8) != 0) {
