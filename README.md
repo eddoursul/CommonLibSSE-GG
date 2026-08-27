@@ -15,12 +15,16 @@ This fork continues the MIT licensed line of CommonLibSSE NG. Upstream relicense
 GPL-3.0-or-later on 2026-07-25 (commit `12f851865`). This fork branches from the last MIT
 commit (`6d31e3244`, v4.39.3) and stays under the MIT license.
 
-On top of that base, the fork adds support for Skyrim SE 1.7.99: runtime classification,
-address library format 5, and the 1.7.99 layout changes (`SkyrimVM`, `PlayerCharacter`,
-the input handler vtables, `BSInputEventQueue`, the system utilities, and the new input
-event classes). Shifted members are reached through version aware accessors -- read them
-through the accessors, never directly. Every layout claim was verified against the
-1.6.1170 and 1.7.99 binaries. No code from the GPL licensed upstream commits was copied.
+On top of that base, the fork adds support for Skyrim SE 1.7.99 and 1.7.104: runtime
+classification, address library format 5, and the 1.7.99 layout changes (`SkyrimVM`,
+`PlayerCharacter`, the input handler vtables, `BSInputEventQueue`, the system utilities,
+and the new input event classes). Shifted members are reached through version aware
+accessors -- read them through the accessors, never directly. Every layout claim was
+verified against the 1.6.1170, 1.7.99 and 1.7.104 binaries. No code from the GPL licensed
+upstream commits was copied.
+
+1.7.104 is a recompile of 1.7.99 with no structure layout change, so every version gate
+stays at `SKSE::RUNTIME_SSE_1_7_99` and applies to both runtimes.
 
 ## Usage
 

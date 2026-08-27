@@ -350,6 +350,7 @@ if(BUILD_TESTS)
 		tests/REL/versionlib-1-6-1130-0.bin
 		tests/REL/versionlib-1-6-1170-0.bin
 		tests/REL/versionlib-1-6-1179-0.bin
+		tests/REL/versionlib-1-7-104-0.bin
 		DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/Data/SKSE/Plugins/"
 	)
 

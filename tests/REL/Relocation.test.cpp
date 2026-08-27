@@ -331,6 +331,34 @@ TEST_CASE("Module/SupportsSkyrimAE_1_6_1179_GOG")
 		REL::Module::reset();
 	}
 }
+
+// 1.7.104 ships the dense format 5 database that 1.7.99 introduced.
+TEST_CASE("Module/SupportsSkyrimAE_1_7_104")
+{
+	SECTION("Runtime is mockable")
+	{
+		REQUIRE(REL::Module::mock(SKSE::RUNTIME_SSE_1_7_104, REL::Module::Runtime::AE, L"SkyrimSE.exe", 0x1000));
+	}
+	SECTION("Address Library format can be loaded")
+	{
+		CHECK(REL::IDDatabase::inject(
+			L"Data\\SKSE\\Plugins\\versionlib-1-7-104-0.bin", REL::IDDatabase::Format::SSEv5, SKSE::RUNTIME_SSE_1_7_104));
+	}
+	SECTION("Lookup by ID returns the correct offset")
+	{
+		CHECK(REL::IDDatabase::get().id2offset(11483) == 0x155260);
+	}
+	SECTION("The dense array is indexed directly by ID")
+	{
+		CHECK(REL::IDDatabase::get().id2offset(1) == 0x1022);
+		CHECK(REL::IDDatabase::get().id2offset(2) == 0x102d);
+		CHECK(REL::IDDatabase::get().id2offset(3) == 0x1038);
+	}
+	SECTION("ID database and module can be reset")
+	{
+		REL::Module::reset();
+	}
+}
 #endif
 
 #ifdef ENABLE_SKYRIM_VR
