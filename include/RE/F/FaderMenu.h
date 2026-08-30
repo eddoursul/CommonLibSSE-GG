@@ -39,7 +39,10 @@ namespace RE
 #ifndef SKYRIM_CROSS_VR
 		RUNTIME_DATA_CONTENT;  // 30 - smart ptr
 #endif
+#if defined(EXCLUSIVE_SKYRIM_VR)
+		std::byte unk50[0x10];  // 50 - VR only, contents not mapped
+#endif
 	};
-	STATIC_ASSERT_SIZE(FaderMenu, 0x40, 0x40, 0x50, 0x30);
+	STATIC_ASSERT_SIZE(FaderMenu, 0x40, 0x40, 0x60, 0x30);
 }
 #undef RUNTIME_DATA_CONTENT

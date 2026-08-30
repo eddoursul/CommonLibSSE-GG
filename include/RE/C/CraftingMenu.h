@@ -1,6 +1,7 @@
 #pragma once
 
 #include "RE/I/IMenu.h"
+#include "RE/M/MenuEventHandler.h"
 #include "REL/RuntimeDataAccessors.h"
 
 namespace RE
@@ -15,10 +16,10 @@ namespace RE
 	// context = kItemMenu
 	class CraftingMenu :
 #ifdef ENABLE_SKYRIM_VR
-		public IMenu,
-		public MenuEventHandler
+		public IMenu,            // 00
+		public MenuEventHandler  // 40 - VR only
 #else
-		public IMenu
+		public IMenu  // 00
 #endif
 	{
 	public:
@@ -33,11 +34,11 @@ namespace RE
 		void               AdvanceMovie(float a_interval, std::uint32_t a_currentTime) override;  // 05
 		void               PostDisplay() override;                                                // 06
 
-		RUNTIME_DATA_POINTER_ACCESSOR_EX(CraftingSubMenus::CraftingSubMenu*, GetCraftingSubMenu, 0x30, 0x40);
+		RUNTIME_DATA_POINTER_ACCESSOR_EX(CraftingSubMenus::CraftingSubMenu*, GetCraftingSubMenu, 0x30, 0x50);
 
 		inline void SetCraftingSubMenu(CraftingSubMenus::CraftingSubMenu* craftingSubMenu) noexcept
 		{
-			REL::RelocateMember<CraftingSubMenus::CraftingSubMenu*>(this, 0x30, 0x40) = craftingSubMenu;
+			REL::RelocateMember<CraftingSubMenus::CraftingSubMenu*>(this, 0x30, 0x50) = craftingSubMenu;
 		}
 
 		static void QuitMenu()
@@ -49,7 +50,7 @@ namespace RE
 
 		// members
 #ifndef SKYRIM_CROSS_VR
-		CraftingSubMenus::CraftingSubMenu* subMenu;  // 30, 40
+		CraftingSubMenus::CraftingSubMenu* subMenu;  // 30, 50
 #endif
 	};
 	STATIC_ASSERT_SIZE(CraftingMenu, 0x38, 0x38, 0x58, 0x40);

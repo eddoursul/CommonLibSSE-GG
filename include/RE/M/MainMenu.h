@@ -103,12 +103,19 @@ namespace RE
 			}
 		}
 
-		RUNTIME_DATA_ACCESSOR(RUNTIME_DATA, 0x50, 0x60);
+		RUNTIME_DATA_ACCESSOR(RUNTIME_DATA, 0x50, 0x68);
 		// members
 #ifndef SKYRIM_CROSS_VR
-		RUNTIME_DATA_CONTENT;  // 50, 60
+		// GFxFunctionHandler on SE and AE. On VR a third BSTEventSink and
+		// MenuEventHandler stand here instead.
+#	if defined(EXCLUSIVE_SKYRIM_VR)
+		std::byte unk50[0x18];  // 50
+#	else
+		std::byte unk40[0x10];  // 40
+#	endif
+		RUNTIME_DATA_CONTENT;  // 50, 68
 #endif
 	};
-	STATIC_ASSERT_SIZE(MainMenu, 0x60, 0x60, 0x70, 0x30);
+	STATIC_ASSERT_SIZE(MainMenu, 0x70, 0x70, 0x88, 0x30);
 }
 #undef RUNTIME_DATA_CONTENT

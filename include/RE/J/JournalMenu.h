@@ -71,7 +71,10 @@ namespace RE
 #ifndef SKYRIM_CROSS_VR
 		RUNTIME_DATA_CONTENT;  // 48, 58
 #endif
+#if defined(EXCLUSIVE_SKYRIM_VR)
+		std::byte unkF8[0x10];  // F8 - VR only, contents not mapped
+#endif
 	};
-	STATIC_ASSERT_SIZE(JournalMenu, 0xE8, 0xE8, 0xF8, 0x40);
+	STATIC_ASSERT_SIZE(JournalMenu, 0xE8, 0xE8, 0x108, 0x40);
 }
 #undef RUNTIME_DATA_CONTENT

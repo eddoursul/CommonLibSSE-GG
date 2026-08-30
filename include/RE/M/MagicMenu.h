@@ -2,6 +2,7 @@
 
 #include "RE/G/GFxValue.h"
 #include "RE/I/IMenu.h"
+#include "RE/M/MenuEventHandler.h"
 #include "REL/RuntimeDataAccessors.h"
 
 namespace RE
@@ -13,7 +14,13 @@ namespace RE
 	// menuDepth = 0
 	// flags = kPausesGame | kUsesMenuContext | kDisablePauseMenu | kUpdateUsesCursor | kInventoryItemMenu | kCustomRendering
 	// context = kItemMenu
-	class MagicMenu : public IMenu
+	class MagicMenu :
+#ifdef ENABLE_SKYRIM_VR
+		public IMenu,            // 00
+		public MenuEventHandler  // 40 - VR only
+#else
+		public IMenu  // 00
+#endif
 	{
 	public:
 		inline static constexpr auto      RTTI = RTTI_MagicMenu;
@@ -43,12 +50,12 @@ namespace RE
 		UI_MESSAGE_RESULTS ProcessMessage(UIMessage& a_message) override;    // 04
 		void               PostDisplay() override;                           // 06
 
-		RUNTIME_DATA_ACCESSOR(RUNTIME_DATA, 0x30, 0x40);
+		RUNTIME_DATA_ACCESSOR(RUNTIME_DATA, 0x30, 0x50);
 		// members
 #ifndef SKYRIM_CROSS_VR
-		RUNTIME_DATA_CONTENT;  // 30, 40
+		RUNTIME_DATA_CONTENT;  // 30, 50
 #endif
 	};
-	STATIC_ASSERT_SIZE(MagicMenu, 0x68, 0x68, 0x78, 0x30);
+	STATIC_ASSERT_SIZE(MagicMenu, 0x68, 0x68, 0x88, 0x40);
 }
 #undef RUNTIME_DATA_CONTENT

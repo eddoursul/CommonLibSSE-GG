@@ -111,11 +111,14 @@ namespace RE
 #ifndef SKYRIM_CROSS_VR
 		RUNTIME_DATA_CONTENT  // 50, 60
 #endif
+#if defined(EXCLUSIVE_SKYRIM_VR)
+			std::byte unkA8[0x8];  // A8 - VR only, contents not mapped
+#endif
 
-			private :
-			static void
+	private:
+		static void
 			OpenMenu_Impl(const BSString& a_description, const ExtraDataList* a_extraList, TESObjectREFR* a_targetReference, TESObjectBOOK* a_targetBook, const NiPoint3& a_pos, const NiMatrix3& a_rot, float a_scale, bool a_useDefaultPos);
 	};
-	STATIC_ASSERT_SIZE(BookMenu, 0x98, 0x98, 0xA8, 0x30);
+	STATIC_ASSERT_SIZE(BookMenu, 0x98, 0x98, 0xB0, 0x30);
 }
 #undef RUNTIME_DATA_CONTENT
