@@ -26,13 +26,6 @@ upstream commits was copied.
 1.7.104 is a recompile of 1.7.99 with no structure layout change, so every version gate
 stays at `SKSE::RUNTIME_SSE_1_7_99` and applies to both runtimes.
 
-A plugin that uses the address library declares the SKSE flag
-`kVersionIndependentEx_AddressLibraryV5` when AE support is compiled in, through both
-`SKSEPluginInfo` and `PluginVersionData::UsesAddressLibrary()`. Without the flag, SKSE 2.3.1
-loads an address library plugin on 1.7.99 and later only when the PE timestamp of the DLL
-is after 2025-05-26. `PluginDeclaration::GetStructCompatibility()` returns the struct
-compatibility without the flag.
-
 ## Usage
 
 To develop a C++ project that uses CommonLibSSE, you'll want to have this code available for discovery, and included as a build dependency by your build manager. Below are examples using the `xmake` or `cmake` managers.
