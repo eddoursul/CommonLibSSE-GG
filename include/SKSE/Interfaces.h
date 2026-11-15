@@ -375,6 +375,7 @@ namespace SKSE
 		enum
 		{
 			kVersionIndependentEx_NoStructUse = 1 << 0,
+			kVersionIndependentEx_AddressLibraryV5 = 1 << 1,  // reads the address library format of 1.7.99 and later
 		};
 
 		constexpr void PluginVersion(REL::Version a_version) noexcept { pluginVersion = a_version.pack(); }
@@ -393,7 +394,15 @@ namespace SKSE
 
 		[[nodiscard]] constexpr std::string_view GetAuthorEmail() const noexcept { return std::string_view{ supportEmail }; }
 
-		constexpr void UsesAddressLibrary() noexcept { versionIndependence |= kVersionIndependent_AddressLibraryPostAE; }
+		constexpr void UsesAddressLibrary() noexcept
+		{
+			versionIndependence |= kVersionIndependent_AddressLibraryPostAE;
+#ifdef ENABLE_SKYRIM_AE
+			// REL::IDDatabase reads format 5, and only an AE build runs on 1.7.99 and later
+			versionIndependenceEx |= kVersionIndependentEx_AddressLibraryV5;
+#endif
+		}
+
 		constexpr void UsesSigScanning() noexcept { versionIndependence |= kVersionIndependent_Signatures; }
 		constexpr void UsesUpdatedStructs() noexcept { versionIndependence |= kVersionIndependent_StructsPost629; }
 
@@ -643,7 +652,7 @@ namespace SKSE
 		static_assert(offsetof(PluginDeclarationInfo, MinimumSKSEVersion) == 0x348);
 
 		constexpr PluginDeclaration(PluginDeclarationInfo info) noexcept :
-			_data(std::move(info)) {}
+			_data(WithAddressLibraryV5(info)) {}
 
 		[[nodiscard]] constexpr REL::Version GetVersion() const noexcept
 		{
@@ -667,7 +676,7 @@ namespace SKSE
 
 		[[nodiscard]] constexpr StructCompatibility GetStructCompatibility() const noexcept
 		{
-			return _data.StructCompatibility;
+			return static_cast<StructCompatibility>(std::to_underlying(_data.StructCompatibility) & ~kAddressLibraryV5);
 		}
 
 		[[nodiscard]] constexpr const RuntimeCompatibility& GetRuntimeCompatibility() const noexcept
@@ -687,6 +696,30 @@ namespace SKSE
 		{
 			kVersion = 1,
 		};
+
+		// SKSE reads StructCompatibility as versionIndependenceEx, the field that also declares the
+		// address library format of 1.7.99 and later. Without that flag SKSE 2.3.1 accepts an address
+		// library plugin on 1.7.99 and later only when its PE timestamp is after 2025-05-26.
+		static constexpr std::uint32_t kAddressLibraryV5 = PluginVersionData::kVersionIndependentEx_AddressLibraryV5;
+
+		[[nodiscard]] static constexpr PluginDeclarationInfo WithAddressLibraryV5(const PluginDeclarationInfo& a_info) noexcept
+		{
+#ifdef ENABLE_SKYRIM_AE
+			// REL::IDDatabase reads format 5, and only an AE build runs on 1.7.99 and later
+			if (a_info.RuntimeCompatibility.UsesAddressLibrary()) {
+				return {
+					.Version = a_info.Version,
+					.Name = a_info.Name,
+					.Author = a_info.Author,
+					.SupportEmail = a_info.SupportEmail,
+					.StructCompatibility = static_cast<StructCompatibility>(std::to_underlying(a_info.StructCompatibility) | kAddressLibraryV5),
+					.RuntimeCompatibility = a_info.RuntimeCompatibility,
+					.MinimumSKSEVersion = a_info.MinimumSKSEVersion
+				};
+			}
+#endif
+			return a_info;
+		}
 
 		[[maybe_unused]] const std::uint32_t         _dataVersion{ kVersion };
 		[[maybe_unused]] const PluginDeclarationInfo _data;

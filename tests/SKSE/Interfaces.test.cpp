@@ -6,6 +6,13 @@
 using namespace REL::literals;
 using namespace SKSE;
 
+// only an AE build declares the address library format of 1.7.99 and later
+#ifdef ENABLE_SKYRIM_AE
+constexpr std::uint32_t AddressLibraryV5 = PluginVersionData::kVersionIndependentEx_AddressLibraryV5;
+#else
+constexpr std::uint32_t AddressLibraryV5 = 0;
+#endif
+
 namespace
 {
 	constinit PluginDeclaration WithAddressLibrary({ .Version = "1.2.3.4"_v,
@@ -50,4 +57,38 @@ TEST_CASE("PluginDeclaration/ConstinitDeclaration")
 TEST_CASE("PluginDeclaration/GetSingleton")
 {
 	CHECK(PluginDeclaration::GetSingleton() == &SKSEPlugin_Version);
+}
+
+TEST_CASE("PluginDeclaration/VersionIndependenceFlags")
+{
+	// SKSE reads a declaration as PluginVersionData
+	SECTION("With address library")
+	{
+		const auto data = std::bit_cast<PluginVersionData>(WithAddressLibrary);
+		CHECK(data.versionIndependence == PluginVersionData::kVersionIndependent_AddressLibraryPostAE);
+		CHECK(data.versionIndependenceEx == (PluginVersionData::kVersionIndependentEx_NoStructUse | AddressLibraryV5));
+		CHECK(WithAddressLibrary.GetStructCompatibility() == StructCompatibility::Independent);
+	}
+	SECTION("With specific runtime compatibility")
+	{
+		const auto data = std::bit_cast<PluginVersionData>(ForSpecificRuntimes);
+		CHECK(data.versionIndependence == 0);
+		CHECK(data.versionIndependenceEx == PluginVersionData::kVersionIndependentEx_NoStructUse);
+		CHECK(ForSpecificRuntimes.GetStructCompatibility() == StructCompatibility::Independent);
+	}
+	SECTION("Declared with SKSEPluginInfo")
+	{
+		const auto data = std::bit_cast<PluginVersionData>(SKSEPlugin_Version);
+		CHECK(data.versionIndependence == PluginVersionData::kVersionIndependent_AddressLibraryPostAE);
+		CHECK(data.versionIndependenceEx == (PluginVersionData::kVersionIndependentEx_NoStructUse | AddressLibraryV5));
+	}
+}
+
+TEST_CASE("PluginVersionData/UsesAddressLibrary")
+{
+	PluginVersionData data{};
+	data.UsesAddressLibrary();
+	data.UsesNoStructs();
+	CHECK(data.versionIndependence == PluginVersionData::kVersionIndependent_AddressLibraryPostAE);
+	CHECK(data.versionIndependenceEx == (PluginVersionData::kVersionIndependentEx_NoStructUse | AddressLibraryV5));
 }
