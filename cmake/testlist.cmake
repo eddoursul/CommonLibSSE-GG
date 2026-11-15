@@ -5,5 +5,6 @@ set(TESTS
     tests/REL/Relocation.test.cpp
     tests/REL/StaticAssertSize.test.cpp
     tests/SKSE/Interfaces.test.cpp
+    tests/SKSE/Logger.test.cpp
     tests/SKSE/Trampoline.test.cpp
 )

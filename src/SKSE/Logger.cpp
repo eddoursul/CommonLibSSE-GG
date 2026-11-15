@@ -9,7 +9,7 @@
 
 #include "SKSE/API.h"
 
-#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/base_sink.h>
 #include <spdlog/sinks/msvc_sink.h>
 
 namespace SKSE
@@ -64,6 +64,31 @@ namespace SKSE
 
 			std::regex _filter;
 		};
+
+		class WideFileSink final : public spdlog::sinks::base_sink<std::mutex>
+		{
+		public:
+			explicit WideFileSink(const std::filesystem::path& a_path)
+			{
+				std::error_code ec;
+				std::filesystem::create_directories(a_path.parent_path(), ec);
+				// Binary, as spdlog already ends lines with \r\n on Windows
+				_file.open(a_path, std::ios::binary | std::ios::trunc);
+			}
+
+		protected:
+			void sink_it_(const spdlog::details::log_msg& a_msg) override
+			{
+				spdlog::memory_buf_t formatted;
+				formatter_->format(a_msg, formatted);
+				_file.write(formatted.data(), static_cast<std::streamsize>(formatted.size()));
+			}
+
+			void flush_() override { _file.flush(); }
+
+		private:
+			std::ofstream _file;
+		};
 	}
 
 	namespace log
@@ -90,6 +115,11 @@ namespace SKSE
 			path /= "SKSE"sv;
 
 			return path;
+		}
+
+		spdlog::sink_ptr file_sink(const std::filesystem::path& a_path)
+		{
+			return std::make_shared<Impl::WideFileSink>(a_path);
 		}
 
 		void add_papyrus_sink(std::regex a_filter)
@@ -135,7 +165,7 @@ namespace SKSE
 			*path /= std::format("{}.log", SKSE::GetPluginName());
 
 			std::vector<spdlog::sink_ptr> sinks{
-				std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true),
+				file_sink(*path),
 				std::make_shared<spdlog::sinks::msvc_sink_mt>()
 			};
 

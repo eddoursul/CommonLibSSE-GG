@@ -37,6 +37,13 @@ namespace SKSE::log
 
 	[[nodiscard]] std::optional<std::filesystem::path> log_directory();
 
+	// A thread safe sink that truncates a_path and writes to it, creating the parent directories.
+	// Use it instead of spdlog's basic_file_sink: that takes a narrow path in the ANSI code page,
+	// and std::filesystem::path::string() throws for a path the code page cannot represent, such
+	// as a Documents folder under a Cyrillic account name on a Western Windows. This sink opens the
+	// wide path. If the file cannot be opened, the sink drops every message.
+	[[nodiscard]] spdlog::sink_ptr file_sink(const std::filesystem::path& a_path);
+
 	void add_papyrus_sink(std::regex a_filter);
 	void remove_papyrus_sink();
 
